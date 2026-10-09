@@ -151,7 +151,11 @@
   .tool[aria-pressed=true] { background: var(--ink); color: #fff; }
   .tool:disabled { opacity: .35; cursor: default; }
   .spacer { flex: 1; }
-  .footnote { font-weight: 700; font-size: 14px; margin: 10px 0 0; }
+  .q4-notes { margin: 0 0 14px; font-size: 15px; }
+  .q4-notes p { margin: 0 0 2px; }
+  .footnote { font-weight: 700; }
+  .examples-hint { color: var(--muted); }
+  .examples-hint strong { color: var(--ink); background: #f2d68a; padding: 0 3px; border-radius: 2px; }
 
   .submit-row { margin-top: 40px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
   .submit {
@@ -229,6 +233,10 @@
           <p>Draw a moment or feeling, not an object. Messy is great.</p>
         </div>
       </div>
+      <div class="q4-notes">
+        <p class="footnote">*(Please avoid common shapes like circles, squares, or hearts.)</p>
+        <p class="examples-hint"><span id="hintVerb">Hover over</span> the highlighted word <strong>shape</strong> to see examples.</p>
+      </div>
       <div class="pad-wrap">
         <canvas id="pad" aria-label="Drawing area"></canvas>
         <div class="pad-hint" id="padHint">Draw here with your finger or mouse</div>
@@ -241,7 +249,6 @@
         <button type="button" class="tool" id="undo" disabled>Undo</button>
         <button type="button" class="tool" id="clear" disabled>Clear</button>
       </div>
-      <p class="footnote">*(Please avoid common shapes like circles, squares, or hearts.)</p>
 
       <div style="margin-top:20px">
         <label class="small-label" for="shapeWhy">Tell us about your shape <span class="optional">(optional)</span></label>
@@ -386,6 +393,7 @@
   const tip = document.getElementById("shapeTip");
   const canHover = window.matchMedia("(hover: hover)").matches;
   let pinned = false, hideTimer;
+  if (!canHover) document.getElementById("hintVerb").textContent = "Tap";
   function showTip() { clearTimeout(hideTimer); tip.hidden = false; word.setAttribute("aria-expanded", "true"); }
   function hideTip() { pinned = false; tip.hidden = true; word.setAttribute("aria-expanded", "false"); }
   function laterHide() { if (!pinned) hideTimer = setTimeout(hideTip, 150); }
