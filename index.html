@@ -151,6 +151,64 @@
   .tool[aria-pressed=true] { background: var(--ink); color: #fff; }
   .tool:disabled { opacity: .35; cursor: default; }
   .spacer { flex: 1; }
+  #undo .ico { display: none; }
+  .colour-btn { display: inline-flex; align-items: center; gap: 6px; }
+  .colour-btn .dot { width: 14px; height: 14px; border-radius: 50%; background: #1c1c1c; border: 1.5px solid rgba(0,0,0,.25); }
+
+  /* Photoshop-style colour picker */
+  .picker {
+    margin-top: 10px;
+    display: grid;
+    grid-template-columns: minmax(0, 260px) 24px auto;
+    gap: 14px;
+    align-items: start;
+    padding: 12px;
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    background: #fff;
+  }
+  .sv {
+    position: relative;
+    height: 180px;
+    border-radius: 3px;
+    background: hsl(0, 100%, 50%);
+    touch-action: none;
+    cursor: crosshair;
+    outline-offset: 2px;
+  }
+  .sv-white, .sv-black { position: absolute; inset: 0; border-radius: 3px; }
+  .sv-white { background: linear-gradient(to right, #fff, rgba(255,255,255,0)); }
+  .sv-black { background: linear-gradient(to top, #000, rgba(0,0,0,0)); }
+  .sv-knob {
+    position: absolute; width: 14px; height: 14px; margin: -7px 0 0 -7px;
+    border-radius: 50%; border: 2px solid #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.6);
+    pointer-events: none;
+  }
+  .hue {
+    position: relative;
+    height: 180px;
+    border-radius: 3px;
+    background: linear-gradient(to bottom, #f00 0%, #ff0 16.66%, #0f0 33.33%, #0ff 50%, #00f 66.66%, #f0f 83.33%, #f00 100%);
+    touch-action: none;
+    cursor: ns-resize;
+    outline-offset: 2px;
+  }
+  .hue-knob {
+    position: absolute; left: -4px; right: -4px; height: 8px; margin-top: -4px;
+    border: 2px solid #fff; border-radius: 3px; box-shadow: 0 0 0 1px rgba(0,0,0,.6);
+    pointer-events: none;
+  }
+  .picker-side { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
+  .preview { display: grid; grid-template-columns: auto; justify-items: center; font-size: 11px; color: var(--muted); }
+  .pv { display: block; width: 56px; height: 30px; border: 1.5px solid var(--ink); }
+  #pvNew { border-bottom: 0; border-radius: 3px 3px 0 0; }
+  #pvOld { border-top: 0; border-radius: 0 0 3px 3px; cursor: pointer; }
+  .pv-label { line-height: 1.6; }
+  .hex-label { display: flex; align-items: center; gap: 2px; font-weight: 700; font-size: 15px; }
+  .hex-label input {
+    width: 78px; padding: 4px 2px; border-bottom-width: 1.5px;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 15px; text-transform: uppercase;
+  }
   .q4-notes { margin: 0 0 14px; font-size: 15px; }
   .q4-notes p { margin: 0 0 2px; }
   .footnote { font-weight: 700; }
@@ -184,7 +242,18 @@
     .words { grid-template-columns: 1fr; gap: 8px; }
     canvas { height: 300px; }
     .toolbar { gap: 6px; }
-    .tool { font-size: 13px; padding: 6px 11px; }
+    .picker { grid-template-columns: minmax(0, 1fr) 24px; }
+    .sv, .hue { height: 200px; }
+    .picker-side { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; }
+    .preview { grid-template-columns: auto auto auto auto; align-items: center; gap: 0; }
+    #pvNew { border-bottom: 1.5px solid var(--ink); border-right: 0; border-radius: 3px 0 0 3px; }
+    #pvOld { border-top: 1.5px solid var(--ink); border-left: 0; border-radius: 0 3px 3px 0; }
+    .pv { width: 40px; height: 28px; }
+    .pv-label { padding: 0 6px; }
+    .tool { font-size: 13px; padding: 6px 10px; }
+    .colour-btn .lbl, #undo .lbl { display: none; }
+    #undo .ico { display: inline; font-size: 16px; line-height: 1; }
+    .colour-btn .dot { width: 18px; height: 18px; }
   }
 </style>
 </head>
@@ -245,9 +314,29 @@
         <button type="button" class="tool" id="penThin" aria-pressed="true">Thin</button>
         <button type="button" class="tool" id="penThick" aria-pressed="false">Thick</button>
         <button type="button" class="tool" id="eraser" aria-pressed="false">Eraser</button>
+        <button type="button" class="tool colour-btn" id="colourBtn" aria-expanded="false" aria-controls="picker"><span class="dot" id="colourDot"></span><span class="lbl">Colour</span></button>
         <span class="spacer"></span>
-        <button type="button" class="tool" id="undo" disabled>Undo</button>
+        <button type="button" class="tool" id="undo" aria-label="Undo" disabled><span class="ico" aria-hidden="true">↶</span><span class="lbl">Undo</span></button>
         <button type="button" class="tool" id="clear" disabled>Clear</button>
+      </div>
+      <div class="picker" id="picker" hidden>
+        <div class="sv" id="sv" role="slider" tabindex="0" aria-label="Saturation and brightness">
+          <div class="sv-white"></div><div class="sv-black"></div>
+          <div class="sv-knob" id="svKnob"></div>
+        </div>
+        <div class="hue" id="hue" role="slider" tabindex="0" aria-label="Hue">
+          <div class="hue-knob" id="hueKnob"></div>
+        </div>
+        <div class="picker-side">
+          <div class="preview" aria-hidden="true">
+            <span class="pv-label">new</span>
+            <span class="pv" id="pvNew"></span>
+            <span class="pv" id="pvOld" title="Back to this colour"></span>
+            <span class="pv-label">current</span>
+          </div>
+          <label class="hex-label">#<input type="text" id="hex" maxlength="6" spellcheck="false" autocomplete="off" aria-label="Hex colour"></label>
+          <button type="button" class="tool" id="pickerDone">Done</button>
+        </div>
       </div>
 
       <div style="margin-top:20px">
@@ -296,7 +385,7 @@
     c.lineCap = "round";
     c.lineJoin = "round";
     c.lineWidth = s.width;
-    c.strokeStyle = s.tool === "eraser" ? "#ffffff" : "#1c1c1c";
+    c.strokeStyle = s.tool === "eraser" ? "#ffffff" : (s.color || "#1c1c1c");
     c.fillStyle = c.strokeStyle;
     const p = s.points;
     if (p.length === 1) {
@@ -340,7 +429,7 @@
   canvas.addEventListener("pointerdown", e => {
     e.preventDefault();
     canvas.setPointerCapture(e.pointerId);
-    active = { tool: current, width: tools[current], points: [pos(e)] };
+    active = { tool: current, width: tools[current], color: penColor, points: [pos(e)] };
     redraw();
   });
   canvas.addEventListener("pointermove", e => {
@@ -358,12 +447,109 @@
   canvas.addEventListener("pointerup", end);
   canvas.addEventListener("pointercancel", end);
 
+  function selectTool(id) {
+    current = id;
+    lastPen = id === "eraser" ? lastPen : id;
+    Object.keys(tools).forEach(k => document.getElementById(k).setAttribute("aria-pressed", k === id));
+  }
   Object.keys(tools).forEach(id => {
-    document.getElementById(id).addEventListener("click", () => {
-      current = id;
-      Object.keys(tools).forEach(k => document.getElementById(k).setAttribute("aria-pressed", k === id));
-    });
+    document.getElementById(id).addEventListener("click", () => selectTool(id));
   });
+
+  // ---------- Colour picker (HSV square + hue strip) ----------
+  let penColor = "#1c1c1c", lastPen = "penThin";
+  let hsv = { h: 0, s: 0, v: 0.11 };
+  const picker = document.getElementById("picker");
+  const colourBtn = document.getElementById("colourBtn");
+  const sv = document.getElementById("sv"), svKnob = document.getElementById("svKnob");
+  const hue = document.getElementById("hue"), hueKnob = document.getElementById("hueKnob");
+  const pvNew = document.getElementById("pvNew"), pvOld = document.getElementById("pvOld");
+  const hexIn = document.getElementById("hex");
+  const dot = document.getElementById("colourDot");
+
+  function hsvToHex({ h, s, v }) {
+    const f = n => {
+      const k = (n + h / 60) % 6;
+      return v - v * s * Math.max(0, Math.min(k, 4 - k, 1));
+    };
+    return "#" + [f(5), f(3), f(1)].map(x => Math.round(x * 255).toString(16).padStart(2, "0")).join("");
+  }
+  function hexToHsv(hex) {
+    const n = parseInt(hex.slice(1), 16);
+    const r = (n >> 16 & 255) / 255, g = (n >> 8 & 255) / 255, b = (n & 255) / 255;
+    const max = Math.max(r, g, b), d = max - Math.min(r, g, b);
+    let h = 0;
+    if (d) h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return { h: (h * 60 + 360) % 360, s: max ? d / max : 0, v: max };
+  }
+  function renderPicker(fromHexInput) {
+    penColor = hsvToHex(hsv);
+    sv.style.background = `hsl(${hsv.h}, 100%, 50%)`;
+    svKnob.style.left = (hsv.s * 100) + "%";
+    svKnob.style.top = ((1 - hsv.v) * 100) + "%";
+    hueKnob.style.top = (hsv.h / 360 * 100) + "%";
+    pvNew.style.background = penColor;
+    dot.style.background = penColor;
+    if (!fromHexInput) hexIn.value = penColor.slice(1).toUpperCase();
+    sv.setAttribute("aria-valuetext", penColor);
+    hue.setAttribute("aria-valuetext", Math.round(hsv.h) + " degrees");
+    if (current === "eraser") selectTool(lastPen);
+  }
+  function dragOn(el, onMove) {
+    el.addEventListener("pointerdown", e => {
+      e.preventDefault();
+      el.setPointerCapture(e.pointerId);
+      el.focus({ preventScroll: true });
+      const move = ev => {
+        const r = el.getBoundingClientRect();
+        onMove(Math.min(1, Math.max(0, (ev.clientX - r.left) / r.width)),
+               Math.min(1, Math.max(0, (ev.clientY - r.top) / r.height)));
+        renderPicker();
+      };
+      move(e);
+      el.onpointermove = move;
+      el.onpointerup = el.onpointercancel = () => { el.onpointermove = null; };
+    });
+  }
+  dragOn(sv, (x, y) => { hsv.s = x; hsv.v = 1 - y; });
+  dragOn(hue, (x, y) => { hsv.h = Math.min(359.9, y * 360); });
+  sv.addEventListener("keydown", e => {
+    const step = e.shiftKey ? 0.1 : 0.02;
+    const m = { ArrowLeft: ["s", -step], ArrowRight: ["s", step], ArrowUp: ["v", step], ArrowDown: ["v", -step] }[e.key];
+    if (!m) return;
+    e.preventDefault();
+    hsv[m[0]] = Math.min(1, Math.max(0, hsv[m[0]] + m[1]));
+    renderPicker();
+  });
+  hue.addEventListener("keydown", e => {
+    const d = { ArrowUp: -5, ArrowDown: 5 }[e.key];
+    if (!d) return;
+    e.preventDefault();
+    hsv.h = (hsv.h + d + 360) % 360;
+    renderPicker();
+  });
+  hexIn.addEventListener("input", () => {
+    const v = hexIn.value.replace(/[^0-9a-f]/gi, "");
+    if (v !== hexIn.value) hexIn.value = v;
+    if (v.length === 6) { hsv = hexToHsv("#" + v); renderPicker(true); }
+  });
+  hexIn.addEventListener("blur", () => { hexIn.value = penColor.slice(1).toUpperCase(); });
+  pvOld.addEventListener("click", () => { hsv = hexToHsv(pvOld.dataset.c); renderPicker(); });
+
+  function openPicker() {
+    pvOld.dataset.c = penColor;
+    pvOld.style.background = penColor;
+    picker.hidden = false;
+    colourBtn.setAttribute("aria-expanded", "true");
+    renderPicker();
+  }
+  function closePicker() {
+    picker.hidden = true;
+    colourBtn.setAttribute("aria-expanded", "false");
+  }
+  colourBtn.addEventListener("click", () => picker.hidden ? openPicker() : closePicker());
+  document.getElementById("pickerDone").addEventListener("click", closePicker);
+  renderPicker();
   undoBtn.addEventListener("click", () => { strokes.pop(); redraw(); });
   clearBtn.addEventListener("click", () => {
     if (confirm("Clear your drawing?")) { strokes = []; redraw(); }
