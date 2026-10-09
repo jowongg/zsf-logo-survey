@@ -15,10 +15,10 @@
 
 const SHEET_NAME = "Responses";
 const HEADERS = [
-  "Submitted", "Name", "Q1 How you feel", "Word 1", "Word 2", "Word 3",
+  "Submitted", "Name", "Email", "Q1 How you feel", "Word 1", "Word 2", "Word 3",
   "Q3 Colour + why", "Drawing", "About the shape"
 ];
-const DRAWING_COL = 8;
+const DRAWING_COL = 9;
 
 function doPost(e) {
   const lock = LockService.getScriptLock();
@@ -31,6 +31,7 @@ function doPost(e) {
     sheet.appendRow([
       new Date(),
       clean_(data.name),
+      clean_(data.email),
       clean_(data.feel),
       clean_(words[0]),
       clean_(words[1]),
@@ -78,7 +79,11 @@ function getSheet_() {
     sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight("bold");
     sheet.setFrozenRows(1);
     sheet.setColumnWidth(DRAWING_COL, 280);
-    sheet.getRange("C:I").setWrap(true);
+    sheet.getRange("D:J").setWrap(true);
+  } else if (sheet.getRange(1, 3).getValue() !== "Email") {
+    // Sheet made by the earlier version: add the Email column after Name
+    sheet.insertColumnAfter(2);
+    sheet.getRange(1, 3).setValue("Email").setFontWeight("bold");
   }
   return sheet;
 }
