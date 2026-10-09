@@ -165,6 +165,10 @@
   .msg { font-size: 15px; min-height: 1.5em; }
   .msg.error { color: var(--error); font-weight: 700; }
 
+  .field-error { color: var(--error); font-size: 14px; font-weight: 700; margin: 6px 0 0; }
+  .invalid input[type=text], .invalid textarea:not(#shapeWhy) { border-bottom-color: var(--error); }
+  .invalid .pad-wrap { border-color: var(--error); }
+
   .thanks { text-align: center; padding: 40px 0 20px; }
   .thanks h2 { font-family: "Archivo Black", sans-serif; font-size: 38px; margin: 0 0 8px; }
   .thanks p { color: var(--muted); margin: 0 0 24px; }
@@ -400,6 +404,46 @@
   });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && !tip.hidden) { hideTip(); word.focus(); } });
 
+  // ---------- Required questions ----------
+  // box: the element that turns red; after: where the error message goes
+  const required = [
+    { ids: ["name"], ok: () => !!val("name"), text: "Please enter your name." },
+    { ids: ["feel"], ok: () => !!val("feel"), text: "Please answer this question." },
+    { ids: ["w1", "w2", "w3"], ok: () => !!(val("w1") && val("w2") && val("w3")), text: "Please fill in all three words." },
+    { ids: ["colour"], ok: () => !!val("colour"), text: "Please answer this question." },
+    { ids: [], pad: true, ok: () => hasInk(), text: "Please draw your shape." }
+  ];
+  required.forEach(r => {
+    const anchor = r.pad ? document.querySelector(".toolbar") : document.getElementById(r.ids[0]).closest(".words") || document.getElementById(r.ids[0]);
+    r.box = r.pad ? anchor.closest(".q") : anchor.closest(".field, .q");
+    r.err = document.createElement("p");
+    r.err.className = "field-error";
+    r.err.textContent = r.text;
+    r.err.hidden = true;
+    anchor.insertAdjacentElement("afterend", r.err);
+    const clear = () => { if (r.ok()) { r.box.classList.remove("invalid"); r.err.hidden = true; } };
+    r.ids.forEach(id => document.getElementById(id).addEventListener("input", clear));
+    if (r.pad) canvas.addEventListener("pointerup", clear);
+  });
+  function validate() {
+    let first = null;
+    required.forEach(r => {
+      const good = r.ok();
+      r.box.classList.toggle("invalid", !good);
+      r.err.hidden = good;
+      if (!good && !first) first = r;
+    });
+    if (first) {
+      first.box.scrollIntoView({ behavior: "smooth", block: "center" });
+      if (first.ids.length) {
+        const empty = first.ids.find(id => !val(id)) || first.ids[0];
+        setTimeout(() => document.getElementById(empty).focus({ preventScroll: true }), 300);
+      }
+      return false;
+    }
+    return true;
+  }
+
   // ---------- Submit ----------
   const form = document.getElementById("survey");
   const msg = document.getElementById("msg");
@@ -411,10 +455,9 @@
     e.preventDefault();
     msg.className = "msg"; msg.textContent = "";
 
-    const answered = [val("feel"), val("w1"), val("w2"), val("w3"), val("colour")].some(Boolean) || hasInk();
-    if (!answered) {
+    if (!validate()) {
       msg.className = "msg error";
-      msg.textContent = "Please answer at least one question before submitting.";
+      msg.textContent = "Please fill in the highlighted questions.";
       return;
     }
     if (SUBMIT_URL.startsWith("PASTE_")) {
