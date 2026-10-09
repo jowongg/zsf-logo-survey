@@ -152,8 +152,12 @@
   .tool:disabled { opacity: .35; cursor: default; }
   .spacer { flex: 1; }
   #undo .ico { display: none; }
-  .colour-btn { display: inline-flex; align-items: center; gap: 6px; }
-  .colour-btn .dot { width: 14px; height: 14px; border-radius: 50%; background: #1c1c1c; border: 1.5px solid rgba(0,0,0,.25); }
+  .colour-btn { white-space: nowrap; }
+  .colour-btn .dot {
+    display: inline-block; flex: none; vertical-align: -2px;
+    width: 14px; height: 14px; margin-right: 7px;
+    border-radius: 50%; background: #1c1c1c; border: 1.5px solid rgba(0,0,0,.25);
+  }
 
   /* Photoshop-style colour picker */
   .picker {
@@ -253,7 +257,7 @@
     .tool { font-size: 13px; padding: 6px 10px; }
     .colour-btn .lbl, #undo .lbl { display: none; }
     #undo .ico { display: inline; font-size: 16px; line-height: 1; }
-    .colour-btn .dot { width: 18px; height: 18px; }
+    .colour-btn .dot { width: 18px; height: 18px; margin-right: 0; vertical-align: -4px; }
   }
 </style>
 </head>
