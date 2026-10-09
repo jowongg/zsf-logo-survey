@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ZSF Logo Research</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Lato:wght@400;700;900&display=swap" rel="stylesheet">
+<script>
+  // ============================================================
+  // SETUP: paste your Google Apps Script web app URL below.
+  // (See README.md, step 2.)
+  // ============================================================
+  const SUBMIT_URL = "PASTE_YOUR_APPS_SCRIPT_URL_HERE";
+</script>
+<style>
+  :root {
+    --ink: #1c1c1c;
+    --muted: #5f5f5f;
+    --line: #cfcfcf;
+    --paper: #ffffff;
+    --bg: #f4f2ee;
+    --accent: #1c1c1c;
+    --error: #b42318;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Lato", system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .sheet {
+    max-width: 720px;
+    margin: 32px auto 64px;
+    background: var(--paper);
+    padding: 44px 48px 48px;
+    border-radius: 4px;
+    box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 30px rgba(0,0,0,.06);
+  }
+  h1 {
+    font-family: "Archivo Black", "Lato", sans-serif;
+    font-size: clamp(34px, 7vw, 56px);
+    line-height: 1;
+    letter-spacing: -0.01em;
+    margin: 0 0 12px;
+  }
+  .intro { color: var(--muted); margin: 0 0 32px; max-width: 52ch; }
+
+  .row { display: flex; gap: 24px; margin-bottom: 36px; }
+  .row .field { flex: 1; }
+  .small-label { font-weight: 900; font-size: 15px; display: block; margin-bottom: 4px; }
+  .optional { font-weight: 400; color: var(--muted); }
+
+  .q { margin: 0 0 36px; }
+  .q label.title {
+    display: block;
+    font-weight: 900;
+    font-size: clamp(20px, 3.6vw, 26px);
+    line-height: 1.3;
+    margin-bottom: 10px;
+  }
+  .q .num { margin-right: 4px; }
+
+  input[type=text], textarea {
+    width: 100%;
+    font: inherit;
+    color: inherit;
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid var(--ink);
+    padding: 8px 2px;
+    border-radius: 0;
+    outline: none;
+    resize: vertical;
+  }
+  textarea { min-height: 44px; line-height: 1.5; }
+  input[type=text]:focus, textarea:focus { border-bottom-color: #000; background: #faf9f6; }
+
+  .words { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+  /* Q4 title + shape examples popover */
+  .q4-title {
+    position: relative;
+    font-weight: 900;
+    font-size: clamp(20px, 3.6vw, 26px);
+    line-height: 1.3;
+    margin-bottom: 10px;
+  }
+  .shape-word {
+    font: inherit; color: inherit;
+    border: 0; padding: 0 4px; margin: 0 -1px;
+    cursor: help;
+    background: linear-gradient(transparent 12%, #f2d68a 12%, #f2d68a 92%, transparent 92%);
+    border-bottom: 2px dashed var(--ink);
+    border-radius: 2px;
+  }
+  .shape-word:hover, .shape-word[aria-expanded=true] { background: #f2d68a; }
+  .shape-word:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  .shape-tip {
+    position: absolute; left: 0; right: 0; top: calc(100% + 8px);
+    z-index: 10;
+    background: #fff;
+    border: 2px solid var(--ink);
+    border-radius: 6px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.18);
+    padding: 12px 14px 14px;
+    font-size: 15px; font-weight: 400; line-height: 1.45;
+  }
+  .tip-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .tip-head strong { font-weight: 900; }
+  .tip-close { font: inherit; background: none; border: 0; cursor: pointer; padding: 4px 6px; font-size: 16px; }
+  .shape-tip img { display: block; width: 100%; height: auto; border: 1px solid #eee; border-radius: 3px; margin-bottom: 8px; }
+  .shape-tip p { margin: 4px 0 0; color: var(--muted); }
+
+  /* Drawing pad */
+  .pad-wrap {
+    border: 2px solid var(--ink);
+    border-radius: 2px;
+    position: relative;
+    background: #fff;
+  }
+  canvas {
+    display: block;
+    width: 100%;
+    height: 340px;
+    touch-action: none;
+    cursor: crosshair;
+  }
+  .pad-hint {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    color: #b5b5b5; font-size: 15px;
+    pointer-events: none;
+    transition: opacity .2s;
+  }
+  .toolbar {
+    display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+    margin-top: 10px;
+  }
+  .tool {
+    font: inherit; font-size: 14px; font-weight: 700;
+    background: #fff; color: var(--ink);
+    border: 1.5px solid var(--ink); border-radius: 999px;
+    padding: 6px 14px; cursor: pointer;
+  }
+  .tool[aria-pressed=true] { background: var(--ink); color: #fff; }
+  .tool:disabled { opacity: .35; cursor: default; }
+  .spacer { flex: 1; }
+  .footnote { font-weight: 700; font-size: 14px; margin: 10px 0 0; }
+
+  .submit-row { margin-top: 40px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+  .submit {
+    font-family: "Archivo Black", sans-serif;
+    font-size: 20px;
+    background: var(--ink); color: #fff;
+    border: 0; border-radius: 4px;
+    padding: 14px 32px; cursor: pointer;
+  }
+  .submit:disabled { opacity: .5; cursor: wait; }
+  .msg { font-size: 15px; min-height: 1.5em; }
+  .msg.error { color: var(--error); font-weight: 700; }
+
+  .thanks { text-align: center; padding: 40px 0 20px; }
+  .thanks h2 { font-family: "Archivo Black", sans-serif; font-size: 38px; margin: 0 0 8px; }
+  .thanks p { color: var(--muted); margin: 0 0 24px; }
+  [hidden] { display: none !important; }
+
+  @media (max-width: 600px) {
+    .sheet { margin: 0; padding: 28px 16px 40px; border-radius: 0; box-shadow: none; }
+    .row { flex-direction: column; gap: 20px; }
+    .words { grid-template-columns: 1fr; gap: 8px; }
+    canvas { height: 300px; }
+    .toolbar { gap: 6px; }
+    .tool { font-size: 13px; padding: 6px 11px; }
+  }
+</style>
+</head>
+<body>
+<main class="sheet">
+  <form id="survey" novalidate>
+    <h1>ZSF Logo Research</h1>
+    <p class="intro">We're designing a new logo for ZSF and want it to come from you. There are no wrong answers — go with your gut.</p>
+
+    <div class="row">
+      <div class="field">
+        <label class="small-label" for="name">Name</label>
+        <input type="text" id="name" name="name" autocomplete="name" maxlength="80">
+      </div>
+    </div>
+
+    <div class="q">
+      <label class="title" for="feel"><span class="num">1.</span> How do you feel when you hang out in ZSF?</label>
+      <textarea id="feel" name="feel" rows="2" maxlength="1000"></textarea>
+    </div>
+
+    <div class="q">
+      <label class="title" for="w1"><span class="num">2.</span> What three words would you use to describe ZSF?</label>
+      <div class="words">
+        <input type="text" id="w1" name="w1" maxlength="40" aria-label="Word 1">
+        <input type="text" id="w2" name="w2" maxlength="40" aria-label="Word 2">
+        <input type="text" id="w3" name="w3" maxlength="40" aria-label="Word 3">
+      </div>
+    </div>
+
+    <div class="q">
+      <label class="title" for="colour"><span class="num">3.</span> What colour would you think of to describe the vibes of ZSF? Why?</label>
+      <textarea id="colour" name="colour" rows="2" maxlength="1000"></textarea>
+    </div>
+
+    <div class="q">
+      <div class="q4-title">
+        <span class="num">4.</span> Draw a <button type="button" class="shape-word" id="shapeWord" aria-expanded="false" aria-controls="shapeTip">shape</button>* that you think represents your experience in Zion.
+        <div class="shape-tip" id="shapeTip" role="dialog" aria-label="Shape examples" hidden>
+          <div class="tip-head">
+            <strong>Examples from the group</strong>
+            <button type="button" class="tip-close" id="tipClose" aria-label="Close examples">✕</button>
+          </div>
+          <img src="images/shape-example-1.jpg" alt="Example drawings: when Danny is surprised, when Nick is brainstorming a new idea" loading="lazy">
+          <img src="images/shape-example-2.jpg" alt="Example drawings: when Engel eats, when Rocco discovers a good song, when Joycelyn designs" loading="lazy">
+          <p>Draw a moment or feeling, not an object. Messy is great.</p>
+        </div>
+      </div>
+      <div class="pad-wrap">
+        <canvas id="pad" aria-label="Drawing area"></canvas>
+        <div class="pad-hint" id="padHint">Draw here with your finger or mouse</div>
+      </div>
+      <div class="toolbar">
+        <button type="button" class="tool" id="penThin" aria-pressed="true">Thin</button>
+        <button type="button" class="tool" id="penThick" aria-pressed="false">Thick</button>
+        <button type="button" class="tool" id="eraser" aria-pressed="false">Eraser</button>
+        <span class="spacer"></span>
+        <button type="button" class="tool" id="undo" disabled>Undo</button>
+        <button type="button" class="tool" id="clear" disabled>Clear</button>
+      </div>
+      <p class="footnote">*(Please avoid common shapes like circles, squares, or hearts.)</p>
+
+      <div style="margin-top:20px">
+        <label class="small-label" for="shapeWhy">Tell us about your shape <span class="optional">(optional)</span></label>
+        <textarea id="shapeWhy" name="shapeWhy" rows="2" maxlength="1000"></textarea>
+      </div>
+    </div>
+
+    <div class="submit-row">
+      <button type="submit" class="submit" id="submitBtn">Submit</button>
+      <div class="msg" id="msg" role="status"></div>
+    </div>
+  </form>
+
+  <section class="thanks" id="thanks" hidden>
+    <h2>Thank you!</h2>
+    <p>Your answers are in. They'll help shape the new ZSF logo.</p>
+    <button type="button" class="tool" id="again">Submit another response</button>
+  </section>
+</main>
+
+<script>
+(() => {
+  // ---------- Drawing pad ----------
+  const canvas = document.getElementById("pad");
+  const ctx = canvas.getContext("2d");
+  const hint = document.getElementById("padHint");
+  const undoBtn = document.getElementById("undo");
+  const clearBtn = document.getElementById("clear");
+  const tools = { penThin: 4, penThick: 12, eraser: 28 };
+  let current = "penThin";
+  let strokes = [];      // [{tool, width, points:[[x,y],...]}], coords in CSS px
+  let active = null;
+
+  function resize() {
+    const dpr = window.devicePixelRatio || 1;
+    const r = canvas.getBoundingClientRect();
+    canvas.width = Math.round(r.width * dpr);
+    canvas.height = Math.round(r.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    redraw();
+  }
+
+  function drawStroke(c, s) {
+    c.save();
+    c.lineCap = "round";
+    c.lineJoin = "round";
+    c.lineWidth = s.width;
+    c.strokeStyle = s.tool === "eraser" ? "#ffffff" : "#1c1c1c";
+    c.fillStyle = c.strokeStyle;
+    const p = s.points;
+    if (p.length === 1) {
+      c.beginPath(); c.arc(p[0][0], p[0][1], s.width / 2, 0, Math.PI * 2); c.fill();
+    } else {
+      c.beginPath();
+      c.moveTo(p[0][0], p[0][1]);
+      for (let i = 1; i < p.length - 1; i++) {
+        const mx = (p[i][0] + p[i + 1][0]) / 2, my = (p[i][1] + p[i + 1][1]) / 2;
+        c.quadraticCurveTo(p[i][0], p[i][1], mx, my);
+      }
+      const last = p[p.length - 1];
+      c.lineTo(last[0], last[1]);
+      c.stroke();
+    }
+    c.restore();
+  }
+
+  function redraw() {
+    const r = canvas.getBoundingClientRect();
+    ctx.fillStyle = "#fff";
+    ctx.fillRect(0, 0, r.width, r.height);
+    strokes.forEach(s => drawStroke(ctx, s));
+    if (active) drawStroke(ctx, active);
+    updateButtons();
+  }
+
+  function hasInk() { return strokes.some(s => s.tool !== "eraser"); }
+
+  function updateButtons() {
+    undoBtn.disabled = strokes.length === 0;
+    clearBtn.disabled = strokes.length === 0;
+    hint.style.opacity = (strokes.length || active) ? 0 : 1;
+  }
+
+  function pos(e) {
+    const r = canvas.getBoundingClientRect();
+    return [e.clientX - r.left, e.clientY - r.top];
+  }
+
+  canvas.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    canvas.setPointerCapture(e.pointerId);
+    active = { tool: current, width: tools[current], points: [pos(e)] };
+    redraw();
+  });
+  canvas.addEventListener("pointermove", e => {
+    if (!active) return;
+    const evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [e];
+    evs.forEach(ev => active.points.push(pos(ev)));
+    redraw();
+  });
+  function end() {
+    if (!active) return;
+    strokes.push(active);
+    active = null;
+    redraw();
+  }
+  canvas.addEventListener("pointerup", end);
+  canvas.addEventListener("pointercancel", end);
+
+  Object.keys(tools).forEach(id => {
+    document.getElementById(id).addEventListener("click", () => {
+      current = id;
+      Object.keys(tools).forEach(k => document.getElementById(k).setAttribute("aria-pressed", k === id));
+    });
+  });
+  undoBtn.addEventListener("click", () => { strokes.pop(); redraw(); });
+  clearBtn.addEventListener("click", () => {
+    if (confirm("Clear your drawing?")) { strokes = []; redraw(); }
+  });
+
+  let rt;
+  window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(resize, 120); });
+  resize();
+
+  // Export at a fixed size (max 900px wide) so files stay small
+  function exportPNG() {
+    const r = canvas.getBoundingClientRect();
+    const scale = Math.min(2, 900 / r.width);
+    const out = document.createElement("canvas");
+    out.width = Math.round(r.width * scale);
+    out.height = Math.round(r.height * scale);
+    const c = out.getContext("2d");
+    c.fillStyle = "#fff";
+    c.fillRect(0, 0, out.width, out.height);
+    c.scale(scale, scale);
+    strokes.forEach(s => drawStroke(c, s));
+    return out.toDataURL("image/png");
+  }
+
+  // ---------- "shape" examples: hover on desktop, tap on phones ----------
+  const word = document.getElementById("shapeWord");
+  const tip = document.getElementById("shapeTip");
+  const canHover = window.matchMedia("(hover: hover)").matches;
+  let pinned = false, hideTimer;
+  function showTip() { clearTimeout(hideTimer); tip.hidden = false; word.setAttribute("aria-expanded", "true"); }
+  function hideTip() { pinned = false; tip.hidden = true; word.setAttribute("aria-expanded", "false"); }
+  function laterHide() { if (!pinned) hideTimer = setTimeout(hideTip, 150); }
+  if (canHover) {
+    word.addEventListener("mouseenter", showTip);
+    word.addEventListener("mouseleave", laterHide);
+    tip.addEventListener("mouseenter", showTip);
+    tip.addEventListener("mouseleave", laterHide);
+  }
+  word.addEventListener("click", () => {
+    if (pinned) { hideTip(); } else { pinned = true; showTip(); }
+  });
+  document.getElementById("tipClose").addEventListener("click", hideTip);
+  document.addEventListener("click", e => {
+    if (!tip.hidden && !tip.contains(e.target) && e.target !== word) hideTip();
+  });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && !tip.hidden) { hideTip(); word.focus(); } });
+
+  // ---------- Submit ----------
+  const form = document.getElementById("survey");
+  const msg = document.getElementById("msg");
+  const btn = document.getElementById("submitBtn");
+  const thanks = document.getElementById("thanks");
+  const val = id => document.getElementById(id).value.trim();
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    msg.className = "msg"; msg.textContent = "";
+
+    const answered = [val("feel"), val("w1"), val("w2"), val("w3"), val("colour")].some(Boolean) || hasInk();
+    if (!answered) {
+      msg.className = "msg error";
+      msg.textContent = "Please answer at least one question before submitting.";
+      return;
+    }
+    if (SUBMIT_URL.startsWith("PASTE_")) {
+      msg.className = "msg error";
+      msg.textContent = "This form isn't connected yet (missing SUBMIT_URL).";
+      return;
+    }
+
+    const payload = {
+      name: val("name"),
+      feel: val("feel"),
+      words: [val("w1"), val("w2"), val("w3")],
+      colour: val("colour"),
+      shapeWhy: val("shapeWhy"),
+      drawing: hasInk() ? exportPNG() : "",
+      submittedAt: new Date().toISOString()
+    };
+
+    btn.disabled = true;
+    btn.textContent = "Sending…";
+    try {
+      // text/plain + no-cors avoids CORS preflight issues with Google Apps Script
+      await fetch(SUBMIT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+      form.hidden = true;
+      thanks.hidden = false;
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      msg.className = "msg error";
+      msg.textContent = "Couldn't send — check your internet connection and try again.";
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "Submit";
+    }
+  });
+
+  document.getElementById("again").addEventListener("click", () => {
+    form.reset();
+    strokes = [];
+    thanks.hidden = true;
+    form.hidden = false;
+    resize();
+    window.scrollTo({ top: 0 });
+  });
+})();
+</script>
+</body>
+</html>
