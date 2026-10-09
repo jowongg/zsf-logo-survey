@@ -256,7 +256,8 @@
     .pv-label { padding: 0 6px; }
     .tool { font-size: 13px; padding: 6px 10px; }
     .colour-btn .lbl, #undo .lbl { display: none; }
-    #undo .ico { display: inline; font-size: 16px; line-height: 1; }
+    #undo .ico { display: inline-block; font-size: 18px; line-height: 0; vertical-align: -4px; }
+    #undo .ico svg { display: block; }
     .colour-btn .dot { width: 18px; height: 18px; margin-right: 0; vertical-align: -4px; }
   }
 </style>
@@ -320,7 +321,7 @@
         <button type="button" class="tool" id="eraser" aria-pressed="false">Eraser</button>
         <button type="button" class="tool colour-btn" id="colourBtn" aria-expanded="false" aria-controls="picker"><span class="dot" id="colourDot"></span><span class="lbl">Colour</span></button>
         <span class="spacer"></span>
-        <button type="button" class="tool" id="undo" aria-label="Undo" disabled><span class="ico" aria-hidden="true">↶</span><span class="lbl">Undo</span></button>
+        <button type="button" class="tool" id="undo" aria-label="Undo" disabled><span class="ico" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 24 24"><path fill="currentColor" d="M4.4 7.4L6.8 4h2.5L7.2 7h6.3a6.5 6.5 0 0 1 0 13H9l1-2h3.5a4.5 4.5 0 1 0 0-9H7.2l2.1 3H6.8L4.4 8.6L4 8z"/></svg></span><span class="lbl">Undo</span></button>
         <button type="button" class="tool" id="clear" disabled>Clear</button>
       </div>
       <div class="picker" id="picker" hidden>
