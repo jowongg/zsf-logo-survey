@@ -3,7 +3,7 @@
 Two pieces:
 
 - **`index.html`** — the survey page (hosted free on GitHub Pages)
-- **`Code.gs`** — a tiny Google Apps Script that receives each response, adds a row to a Google Sheet, and saves the drawing as a PNG in Google Drive
+- **`Code.gs`** — a tiny Google Apps Script that receives each response and adds a row to a Google Sheet, with the drawing shown as an image in the row. It can only access that one spreadsheet.
 
 Respondents don't need any account. Only you see the answers.
 
@@ -17,7 +17,7 @@ Respondents don't need any account. Only you see the answers.
    - Execute as: **Me**
    - Who has access: **Anyone**
 4. Click **Deploy**, then **Authorize access** and allow it.
-   (Google shows an "unverified app" warning because it's your own script — click *Advanced → Go to … (unsafe)*. It only touches this sheet and the drawings folder it creates.)
+   (Google shows an "unverified app" warning because it's your own script — click *Advanced → Go to … (unsafe)*. The permission screen should only ask about **this spreadsheet**. If it asks for all of your Drive files, you're using an old copy of `Code.gs`.)
 5. Copy the **Web app URL** (ends in `/exec`). Open it in a browser — you should see `"ZSF survey receiver is running."`
 
 ## 2. Connect the page
@@ -38,15 +38,15 @@ const SUBMIT_URL = "PASTE_YOUR_APPS_SCRIPT_URL_HERE";
 
 Submit one test response from your phone. Check that:
 - a **Responses** tab appears in the Sheet with your answers, and
-- a Drive folder **"ZSF Logo Research – Drawings"** has the PNG (linked from the row).
+- your drawing shows up in the **Drawing** column.
 
-Delete the test row/file afterwards.
+Delete the test row afterwards.
 
 ---
 
 ### Notes
 
 - **Changing `Code.gs` later?** Use **Deploy → Manage deployments → Edit → Version: New version**. That keeps the same URL. ("New deployment" gives a new URL you'd have to paste in again.)
-- **Collecting the paper sheets too?** Type them into the same Sheet so everything is in one place; scan the drawings into the Drive folder.
+- **Collecting the paper sheets too?** Type them into the same Sheet so everything is in one place; photos of the drawings can go in the Drawing column (Insert → Image → Image in cell).
 - **Closing the survey:** in Apps Script, Deploy → Manage deployments → Archive. The page will stop saving responses.
 - The page can't confirm Google actually saved a response (a browser limitation with Apps Script), so do the test in step 4.
